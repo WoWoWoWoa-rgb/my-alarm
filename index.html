@@ -11,7 +11,7 @@
   <label>何分後: <input type="number" id="minute" min="0" value="0"></label><br>
   <label>何秒後: <input type="number" id="second" min="0" value="0"></label><br><br>
 
-  <button onclick="setAlarm()">✅ アラームを開始</button>
+  <button id="startButton" onclick="setAlarm()">✅ アラームを開始</button>
   <button id="stopButton" onclick="stopAlarm()" style="display:none;">🛑 アラームを止める</button>
 
   <p id="status">待機中...</p>
@@ -20,13 +20,11 @@
 
   <script>
     let alarmTimeout = null;
-    let isAudioAllowed = false;
 
     function setAlarm() {
       const hours = parseInt(document.getElementById("hour").value) || 0;
       const minutes = parseInt(document.getElementById("minute").value) || 0;
       const seconds = parseInt(document.getElementById("second").value) || 0;
-
       const totalMs = (hours * 3600 + minutes * 60 + seconds) * 1000;
 
       if (totalMs <= 0) {
@@ -36,19 +34,21 @@
 
       const audio = document.getElementById("alarmSound");
 
-      // 初回の再生許可をここで試みる（自動許可を得る）
+      // 再生権限の取得（必要な場合）
       audio.play().then(() => {
         audio.pause();
         audio.currentTime = 0;
-        isAudioAllowed = true;
-      }).catch((e) => {
-        console.warn("自動再生はまだ許可されていません。ユーザー操作を待ちます。");
+      }).catch(() => {
+        console.warn("音声の自動再生がブロックされています。ユーザー操作が必要かもしれません。");
       });
 
       document.getElementById("status").innerText =
         `⏳ アラームを ${hours}時間${minutes}分${seconds}秒後にセットしました。`;
 
-      // アラームを予約
+      // 「開始」ボタンを無効化
+      document.getElementById("startButton").disabled = true;
+
+      // タイマー設定
       alarmTimeout = setTimeout(() => {
         document.getElementById("status").innerText = "⏰ アラーム発動！";
         audio.play().catch(e => {
@@ -63,9 +63,12 @@
       const audio = document.getElementById("alarmSound");
       audio.pause();
       audio.currentTime = 0;
-      document.getElementById("status").innerText = "✅ アラーム停止中";
-      document.getElementById("stopButton").style.display = "none";
       clearTimeout(alarmTimeout);
+      document.getElementById("status").innerText = "✅ アラーム停止中";
+
+      // ボタン状態リセット
+      document.getElementById("startButton").disabled = false;
+      document.getElementById("stopButton").style.display = "none";
     }
   </script>
 </body>
