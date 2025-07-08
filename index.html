@@ -1,8 +1,22 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>アラーム</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    #timerCanvas {
+      background: #eee;
+      border-radius: 50%;
+      display: block;
+      margin: 20px auto;
+      box-shadow: 0 0 10px #ccc;
+    }
+  </style>
 </head>
 <body>
   <h1>⏰ アラームをセット</h1>
@@ -16,60 +30,138 @@
 
   <p id="status">待機中...</p>
 
+  <canvas id="timerCanvas" width="200" height="200"></canvas>
+
   <audio id="alarmSound" src="./02 - Old Man River.mp3" preload="auto" loop></audio>
 
   <script>
+    const canvas = document.getElementById('timerCanvas');
+    const ctx = canvas.getContext('2d');
+    const radius = canvas.width / 2 * 0.8; // 円の半径
     let alarmTimeout = null;
+    let countdownInterval = null;
+    let totalSeconds = 0;
+    let endTime = null;
+
+    function drawTimer(remainingSeconds) {
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 背景のグレーの円
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      ctx.fillStyle = '#ddd';
+      ctx.fill();
+
+      // 残り時間の割合を計算
+      const fraction = remainingSeconds / totalSeconds;
+      const startAngle = -Math.PI / 2; // 12時の位置からスタート
+      const endAngle = startAngle + fraction * Math.PI * 2;
+
+      // 残り時間の青い円弧を描く
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.arc(centerX, centerY, radius, startAngle, endAngle, false);
+      ctx.closePath();
+      ctx.fillStyle = '#4a90e2';
+      ctx.fill();
+
+      // 円の中央に残り時間表示
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 30px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(formatTime(remainingSeconds), centerX, centerY);
+    }
+
+    function formatTime(sec) {
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = sec % 60;
+      return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+    }
 
     function setAlarm() {
       const hours = parseInt(document.getElementById("hour").value) || 0;
       const minutes = parseInt(document.getElementById("minute").value) || 0;
       const seconds = parseInt(document.getElementById("second").value) || 0;
-      const totalMs = (hours * 3600 + minutes * 60 + seconds) * 1000;
 
-      if (totalMs <= 0) {
-        alert("⏳ 1秒以上の時間を設定してください。");
+      totalSeconds = hours * 3600 + minutes * 60 + seconds;
+      if(totalSeconds <= 0) {
+        alert('⏳ 1秒以上の時間を設定してください。');
         return;
       }
 
       const audio = document.getElementById("alarmSound");
 
-      // 再生権限の取得（必要な場合）
       audio.play().then(() => {
         audio.pause();
         audio.currentTime = 0;
       }).catch(() => {
-        console.warn("音声の自動再生がブロックされています。ユーザー操作が必要かもしれません。");
+        console.warn('音声の自動再生がブロックされています。');
       });
 
-      document.getElementById("status").innerText =
-        `⏳ アラームを ${hours}時間${minutes}分${seconds}秒後にセットしました。`;
+      document.getElementById('status').innerText = `⏳ アラームを ${formatTime(totalSeconds)} 後にセットしました。`;
 
-      // 「開始」ボタンを無効化
-      document.getElementById("startButton").disabled = true;
+      document.getElementById('startButton').disabled = true;
+      document.getElementById('stopButton').style.display = 'none';
 
-      // タイマー設定
+      endTime = Date.now() + totalSeconds * 1000;
+
+      drawTimer(totalSeconds);
+
+      // カウントダウン開始
+      countdownInterval = setInterval(() => {
+        const now = Date.now();
+        const remainingMs = Math.max(0, Math.round((endTime - now) / 1000));
+
+        drawTimer(remainingMs);
+
+        if(remainingMs <= 0) {
+          clearInterval(countdownInterval);
+          document.getElementById('status').innerText = '⏰ アラーム発動！';
+          audio.play().catch(e => {
+            document.getElementById('status').innerText = '⚠️ 音声が再生できませんでした';
+            console.error(e);
+          });
+          document.getElementById('stopButton').style.display = 'inline-block';
+        }
+      }, 250); // 250msごとに更新すると滑らか
+
+      // 以前のタイマーもクリア
+      if(alarmTimeout) clearTimeout(alarmTimeout);
+
+      // セットタイマーは安全のために置いておく（backup）
       alarmTimeout = setTimeout(() => {
-        document.getElementById("status").innerText = "⏰ アラーム発動！";
+        clearInterval(countdownInterval);
+        document.getElementById('status').innerText = '⏰ アラーム発動！';
         audio.play().catch(e => {
-          document.getElementById("status").innerText = "⚠️ 音声が再生できませんでした";
+          document.getElementById('status').innerText = '⚠️ 音声が再生できませんでした';
           console.error(e);
         });
-        document.getElementById("stopButton").style.display = "inline-block";
-      }, totalMs);
+        document.getElementById('stopButton').style.display = 'inline-block';
+      }, totalSeconds * 1000);
     }
 
     function stopAlarm() {
       const audio = document.getElementById("alarmSound");
       audio.pause();
       audio.currentTime = 0;
-      clearTimeout(alarmTimeout);
-      document.getElementById("status").innerText = "✅ アラーム停止中";
 
-      // ボタン状態リセット
-      document.getElementById("startButton").disabled = false;
-      document.getElementById("stopButton").style.display = "none";
+      if(countdownInterval) clearInterval(countdownInterval);
+      if(alarmTimeout) clearTimeout(alarmTimeout);
+
+      document.getElementById('status').innerText = '✅ アラーム停止中';
+
+      document.getElementById('startButton').disabled = false;
+      document.getElementById('stopButton').style.display = 'none';
+
+      drawTimer(0); // リセット表示
     }
+
+    // ページ読み込み時は空の円と00:00:00を表示
+    drawTimer(0);
   </script>
 </body>
 </html>
