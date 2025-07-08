@@ -16,12 +16,11 @@
 
   <p id="status">待機中...</p>
 
-  <!-- 音声ファイル -->
-  <audio id="alarmSound" src="./OldManRiver.mp3" preload="auto" controls></audio>
+  <!-- 音声ファイル：MP3やWAV可。自由に差し替え可能 -->
+  <audio id="alarmSound" src="./OldManRiver.mp3" preload="auto"></audio>
 
   <script>
     let alarmTime = null;
-    let alarmIntervalId = null;  // setIntervalのIDを保存
 
     // 音の再生テスト用（ユーザー操作で再生許可を得る）
     function testAudio() {
@@ -37,55 +36,38 @@
     }
 
     function setAlarm() {
-      // 入力値の取得＆数値化
-      const hour = parseInt(document.getElementById("hour").value, 10);
-      const minute = parseInt(document.getElementById("minute").value, 10);
-      const second = parseInt(document.getElementById("second").value, 10);
-
-      // 入力値チェック
-      if (
-        isNaN(hour) || hour < 0 || hour > 23 ||
-        isNaN(minute) || minute < 0 || minute > 59 ||
-        isNaN(second) || second < 0 || second > 59
-      ) {
-        alert("正しい時・分・秒を入力してください。");
-        return;
-      }
-
+      const hour = parseInt(document.getElementById("hour").value);
+      const minute = parseInt(document.getElementById("minute").value);
+      const second = parseInt(document.getElementById("second").value);
       const now = new Date();
       alarmTime = new Date();
       alarmTime.setHours(hour);
       alarmTime.setMinutes(minute);
       alarmTime.setSeconds(second);
-      alarmTime.setMilliseconds(0);
 
-      // アラーム時間が過去なら翌日に設定
       if (alarmTime <= now) {
-        alarmTime.setDate(alarmTime.getDate() + 1);
+        alarmTime.setDate(alarmTime.getDate() + 1);  // 次の日に設定
       }
 
-      document.getElementById("status").innerText = `🕒 アラームを ${alarmTime.toLocaleTimeString()} にセットしました`;
+      document.getElementById("status").innerText =
+        `🕒 アラームを ${alarmTime.toLocaleTimeString()} にセットしました`;
 
-      // 既にintervalがあればクリア（多重起動防止）
-      if (alarmIntervalId !== null) {
-        clearInterval(alarmIntervalId);
-      }
+      checkAlarm();
+    }
 
-      // アラームチェック開始（500msごと）
-      alarmIntervalId = setInterval(() => {
+    function checkAlarm() {
+      const interval = setInterval(() => {
         const now = new Date();
-        if (now >= alarmTime) {
-          clearInterval(alarmIntervalId);
-          alarmIntervalId = null;
+        if (alarmTime && now >= alarmTime) {
+          clearInterval(interval);
           document.getElementById("status").innerText = "⏰ アラーム発動！";
           const audio = document.getElementById("alarmSound");
-          audio.currentTime = 0;
           audio.play().catch(e => {
             document.getElementById("status").innerText = "⚠️ 音声が再生できませんでした";
             console.error(e);
           });
         }
-      }, 500);
+      }, 1000);
     }
   </script>
 </body>
