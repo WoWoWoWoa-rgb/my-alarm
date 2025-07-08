@@ -6,38 +6,27 @@
 </head>
 <body>
   <h1>アラームをセット</h1>
-
   <label>時（0〜23）: <input type="number" id="hour" min="0" max="23"></label><br>
   <label>分（0〜59）: <input type="number" id="minute" min="0" max="59"></label><br>
   <label>秒（0〜59）: <input type="number" id="second" min="0" max="59"></label><br><br>
-
   <button onclick="setAlarm()">アラームを開始</button>
   <p id="status">待機中...</p>
-
   <audio id="alarmSound" src="https://www.soundjay.com/button/beep-07.wav" preload="auto"></audio>
-
   <script>
     let alarmTime = null;
-
     function setAlarm() {
       const hour = parseInt(document.getElementById("hour").value);
       const minute = parseInt(document.getElementById("minute").value);
       const second = parseInt(document.getElementById("second").value);
-
       const now = new Date();
       alarmTime = new Date();
-
       alarmTime.setHours(hour);
       alarmTime.setMinutes(minute);
       alarmTime.setSeconds(second);
-
       if (alarmTime <= now) {
-        alarmTime.setDate(alarmTime.getDate() + 1);  // 翌日に設定
+        alarmTime.setDate(alarmTime.getDate() + 1);
       }
-
       const audio = document.getElementById("alarmSound");
-
-      // iOS対策：一度だけ再生して停止、再生許可を取得
       audio.play().then(() => {
         audio.pause();
         audio.currentTime = 0;
@@ -48,7 +37,6 @@
         console.error("Audio playback blocked:", e);
       });
     }
-
     function checkAlarm() {
       const interval = setInterval(() => {
         const now = new Date();
