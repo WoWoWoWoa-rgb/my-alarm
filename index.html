@@ -5,15 +5,36 @@
   <title>アラーム</title>
 </head>
 <body>
-  <h1>アラームをセット</h1>
+  <h1>⏰ アラームをセット</h1>
+
   <label>時（0〜23）: <input type="number" id="hour" min="0" max="23"></label><br>
   <label>分（0〜59）: <input type="number" id="minute" min="0" max="59"></label><br>
   <label>秒（0〜59）: <input type="number" id="second" min="0" max="59"></label><br><br>
-  <button onclick="setAlarm()">アラームを開始</button>
+
+  <button onclick="testAudio()">🔊 音のテスト（必ず先に押してください）</button><br><br>
+  <button onclick="setAlarm()">✅ アラームを開始</button>
+
   <p id="status">待機中...</p>
+
+  <!-- 音声ファイル：MP3やWAV可。自由に差し替え可能 -->
   <audio id="alarmSound" src="https://www.soundjay.com/button/beep-07.wav" preload="auto"></audio>
+
   <script>
     let alarmTime = null;
+
+    // 音の再生テスト用（ユーザー操作で再生許可を得る）
+    function testAudio() {
+      const audio = document.getElementById("alarmSound");
+      audio.play().then(() => {
+        audio.pause();
+        audio.currentTime = 0;
+        alert("🔊 音声の再生が許可されました。次にアラームをセットしてください。");
+      }).catch((e) => {
+        alert("⚠️ 音声再生がブロックされました。もう一度ボタンを押してください。");
+        console.warn("音声再生ブロック：", e);
+      });
+    }
+
     function setAlarm() {
       const hour = parseInt(document.getElementById("hour").value);
       const minute = parseInt(document.getElementById("minute").value);
@@ -23,27 +44,28 @@
       alarmTime.setHours(hour);
       alarmTime.setMinutes(minute);
       alarmTime.setSeconds(second);
+
       if (alarmTime <= now) {
-        alarmTime.setDate(alarmTime.getDate() + 1);
+        alarmTime.setDate(alarmTime.getDate() + 1);  // 次の日に設定
       }
-      const audio = document.getElementById("alarmSound");
-      audio.play().then(() => {
-        audio.pause();
-        audio.currentTime = 0;
-        document.getElementById("status").innerText = `アラームを ${alarmTime.toLocaleTimeString()} にセットしました`;
-        checkAlarm();
-      }).catch((e) => {
-        document.getElementById("status").innerText = "音声再生がブロックされました。もう一度ボタンを押してください。";
-        console.error("Audio playback blocked:", e);
-      });
+
+      document.getElementById("status").innerText =
+        `🕒 アラームを ${alarmTime.toLocaleTimeString()} にセットしました`;
+
+      checkAlarm();
     }
+
     function checkAlarm() {
       const interval = setInterval(() => {
         const now = new Date();
         if (alarmTime && now >= alarmTime) {
           clearInterval(interval);
           document.getElementById("status").innerText = "⏰ アラーム発動！";
-          document.getElementById("alarmSound").play();
+          const audio = document.getElementById("alarmSound");
+          audio.play().catch(e => {
+            document.getElementById("status").innerText = "⚠️ 音声が再生できませんでした";
+            console.error(e);
+          });
         }
       }, 1000);
     }
