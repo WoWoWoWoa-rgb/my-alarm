@@ -25,7 +25,9 @@
   <label>何分後: <input type="number" id="minute" min="0" value="0"></label><br>
   <label>何秒後: <input type="number" id="second" min="0" value="0"></label><br><br>
 
-  <label>アラーム音声ファイルを選択 (mp3, wav 等): <input type="file" id="audioFile" accept="audio/*"></label><br><br>
+  <p>アラーム音声ファイルを選択 (mp3, wav 等):</p>
+  <input type="file" id="audioFile" accept="audio/*"><br><br>
+
 
   <button id="startButton" onclick="setAlarm()">✅ アラームを開始</button>
   <button id="stopButton" onclick="stopAlarm()" style="display:none;">🛑 アラームを止める</button>
